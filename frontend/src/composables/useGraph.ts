@@ -26,7 +26,7 @@ export function useGraph() {
       width,
       height,
       autoFit: 'view',
-      animation: true,
+      animation: false,
       background: 'transparent',
       node: {
         style: (d: Record<string, unknown>) => {
@@ -71,11 +71,12 @@ export function useGraph() {
         },
       },
       layout: {
-        type: 'force',
-        preventOverlap: true,
-        nodeStrength: -200,
-        edgeStrength: 0.1,
-        linkDistance: 120,
+        // 【修改】从 'force' 改为 'dagre' 布局，计算快且不会抖动卡死
+        type: 'dagre',
+        rankdir: 'LR', // 从左到右
+        align: 'UL',
+        nodesepFunc: () => 30,
+        ranksepFunc: () => 50
       },
       behaviors: [
         'drag-canvas',

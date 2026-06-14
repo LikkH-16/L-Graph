@@ -16,10 +16,10 @@ export function masteryColor(level: number): string {
 /** Get raw hex color for mastery level (non-CSS-variable, e.g. for canvas) */
 export function masteryHexColor(level: number): string {
   const colors: Record<number, string> = {
-    0: '#3a3a5c',
-    1: '#e74c3c',
-    2: '#f39c12',
-    3: '#2ecc71',
+    0: '#3a3a3c', // 柔灰
+    1: '#b56c6c', // 莫兰迪红
+    2: '#bfa46f', // 莫兰迪黄
+    3: '#638c70', // 莫兰迪绿
   }
   return colors[level] || colors[0]
 }

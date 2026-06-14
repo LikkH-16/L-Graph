@@ -47,8 +47,8 @@
   &__orb {
     position: absolute;
     border-radius: 50%;
-    filter: blur(80px);
-    opacity: 0.12;
+    filter: blur(40px);
+    opacity: 0.08;
 
     &--1 {
       width: 500px;
