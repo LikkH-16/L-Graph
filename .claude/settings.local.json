@@ -102,7 +102,15 @@
       "Bash(docker volume ls *)",
       "Bash(sc query *)",
       "Bash(wmic product *)",
-      "Bash(docker volume *)"
+      "Bash(docker volume *)",
+      "Bash(mysql *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8080/api/v1/auth/login)",
+      "Bash(python3 -c ' *)",
+      "Bash(python -c ' *)",
+      "Bash(node -e ' *)",
+      "Bash(node *)",
+      "Bash(pip install *)",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('student login:', 'SUCCESS' if d['code']==200 else 'FAILED - '+d['message']\\)\")"
     ]
   }
 }

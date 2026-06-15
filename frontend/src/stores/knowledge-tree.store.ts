@@ -20,12 +20,15 @@ export const useKnowledgeTreeStore = defineStore('knowledge-tree', () => {
     try {
       const res = await knowledgeNodeApi.getTree(subjectId)
       treeData.value = res.tree
-      flatNodeMap.value = new Map()
-      walkTree(res.nodes, (node) => {
-        flatNodeMap.value.set(node.id, node)
-      })
+      // 后端返回的 nodes 是 Map<Long, KnowledgeNodeDto>，序列化为 Record<number, KnowledgeNode>
+      // 直接转换为 Map，无需 walkTree 递归遍历
+      flatNodeMap.value = new Map(
+        Object.entries(res.nodes).map(([id, node]) => [Number(id), node])
+      )
       // Auto-expand first level
       expandedKeys.value = res.tree.map(n => n.id)
+    } catch (e) {
+      console.error('[fetchTree] 获取知识树失败:', e)
     } finally {
       loading.value = false
     }
@@ -87,11 +90,3 @@ export const useKnowledgeTreeStore = defineStore('knowledge-tree', () => {
   }
 })
 
-function walkTree(nodes: KnowledgeNode[], fn: (node: KnowledgeNode) => void) {
-  for (const node of nodes) {
-    fn(node)
-    if (node.children?.length) {
-      walkTree(node.children, fn)
-    }
-  }
-}

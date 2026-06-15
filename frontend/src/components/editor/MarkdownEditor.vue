@@ -11,6 +11,8 @@ import { usePageStore } from '@/stores/page.store'
 
 const props = defineProps<{
   modelValue: string
+  /** 页面 ID，用于 Vditor localStorage 缓存标识 */
+  pageId?: number
 }>()
 
 const emit = defineEmits<{
@@ -25,7 +27,7 @@ let saveTimer: ReturnType<typeof setInterval> | null = null
 
 onMounted(() => {
   if (editorContainer.value) {
-    init(editorContainer.value, props.modelValue)
+    init(editorContainer.value, props.modelValue, props.pageId ? `page-${props.pageId}` : undefined)
   }
 
   // Auto-save every 30 seconds

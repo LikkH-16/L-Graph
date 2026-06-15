@@ -11,8 +11,8 @@ INSERT INTO lgraph_subject (name, description, icon, order_index) VALUES
 
 -- Insert admin user (password: admin123)
 INSERT INTO lgraph_user (username, password_hash, email, role) VALUES
-('admin', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'admin@lgraph.com', 'ADMIN'),
-('student', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'student@lgraph.com', 'USER');
+('admin', '$2a$10$ygDu4qeGp5iergREH25jseRYRb7EVCCSMkg/xx3xx7.Fu.BWwxX62', 'admin@lgraph.com', 'ADMIN'),
+('student', '$2a$10$bkrhWpYPhIytPxxvElj6beLhD86.3URbP8uM829WnP2xMalPKSYIS', 'student@lgraph.com', 'USER');
 
 -- ===== Data Structures (subject_id = 1) =====
 INSERT INTO lgraph_knowledge_node (subject_id, name, description, parent_id, level, order_index, node_type) VALUES

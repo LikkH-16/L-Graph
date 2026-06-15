@@ -7,7 +7,7 @@ export function useMarkdown() {
   const content = ref('')
   const isReady = ref(false)
 
-  function init(container: HTMLElement, initialContent = '') {
+  function init(container: HTMLElement, initialContent = '', cacheId?: string) {
     content.value = initialContent
     vditor.value = new Vditor(container, {
       height: '100%',
@@ -15,6 +15,10 @@ export function useMarkdown() {
       theme: 'dark',
       content: initialContent,
       placeholder: '开始编写笔记... 支持 Markdown、LaTeX 公式和代码高亮',
+      cache: {
+        enable: !!cacheId,
+        id: cacheId || '',
+      },
       preview: {
         theme: { current: 'dark' },
         hljs: { style: 'github-dark' },

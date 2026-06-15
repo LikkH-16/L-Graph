@@ -3,7 +3,8 @@ import { get, post, put, del } from './client'
 
 export interface TreeResponse {
   tree: KnowledgeNodeTreeItem[]
-  nodes: KnowledgeNode[]
+  /** 后端返回的是 Map<Long, KnowledgeNodeDto>，序列化为 JSON 对象 { [id: string]: KnowledgeNode } */
+  nodes: Record<number, KnowledgeNode>
 }
 
 export const knowledgeNodeApi = {

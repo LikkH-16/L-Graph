@@ -57,6 +57,7 @@
       <div class="editor-area" v-if="currentPage">
         <MarkdownEditor
           :model-value="currentPage.content"
+          :page-id="currentPage.id"
           @update:model-value="onContentChange"
         />
       </div>

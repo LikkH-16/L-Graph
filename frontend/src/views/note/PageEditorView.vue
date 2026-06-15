@@ -53,6 +53,7 @@
       <MarkdownEditor
         v-if="pageStore.currentPage"
         :model-value="pageStore.content"
+        :page-id="pageStore.currentPage.id"
         @update:model-value="onContentChange"
       />
     </div>
