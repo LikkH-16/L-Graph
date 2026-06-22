@@ -26,5 +26,9 @@ export const useSubjectStore = defineStore('subject', () => {
     currentSubjectId.value = id
   }
 
-  return { subjects, currentSubjectId, currentSubject, loading, fetchSubjects, setCurrentSubject }
+  function clearCurrentSubject() {
+    currentSubjectId.value = null
+  }
+
+  return { subjects, currentSubjectId, currentSubject, loading, fetchSubjects, setCurrentSubject, clearCurrentSubject }
 })

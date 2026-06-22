@@ -46,12 +46,20 @@
             </button>
           </el-tooltip>
         </div>
-        <el-tooltip content="创建新的笔记页 (Ctrl+N)" placement="top">
-          <el-button size="small" type="primary" @click="addPage">
-            <el-icon><Plus /></el-icon>
-            新建页
-          </el-button>
-        </el-tooltip>
+        <div class="page-tabs-bar-actions">
+          <el-tooltip content="创建新的笔记页 (Ctrl+N)" placement="top">
+            <el-button size="small" type="primary" @click="addPage">
+              <el-icon><Plus /></el-icon>
+              新建页
+            </el-button>
+          </el-tooltip>
+          <el-tooltip content="保存当前页面 (Ctrl+S)" placement="top">
+            <el-button size="small" :loading="pageStore.saving" :disabled="!pageStore.isDirty" @click="saveCurrentPage">
+              <el-icon><Check /></el-icon>
+              保存
+            </el-button>
+          </el-tooltip>
+        </div>
       </div>
 
       <div class="editor-area" v-if="currentPage">
@@ -84,7 +92,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { Plus, EditPen, Edit, Delete } from '@element-plus/icons-vue'
+import { Plus, EditPen, Edit, Delete, Check } from '@element-plus/icons-vue'
 import { useSubjectStore } from '@/stores/subject.store'
 import { useNoteStore } from '@/stores/note.store'
 import { usePageStore } from '@/stores/page.store'
@@ -149,6 +157,14 @@ async function addPage() {
   if (page) {
     currentPageId.value = page.id
     ElMessage.success('新页面已创建')
+  }
+}
+
+async function saveCurrentPage() {
+  if (!currentPage.value) return
+  await pageStore.savePage()
+  if (!pageStore.isDirty) {
+    ElMessage.success('已保存')
   }
 }
 
@@ -255,6 +271,13 @@ async function deleteCurrentPage() {
   margin-bottom: var(--space-4);
   padding-bottom: var(--space-3);
   border-bottom: 1px solid var(--color-border);
+  gap: var(--space-2);
+}
+
+.page-tabs-bar-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
 }
 
 .page-tabs {

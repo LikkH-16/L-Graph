@@ -6,8 +6,10 @@ import com.lgraph.dto.response.GraphDataResponse.GraphEdgeDto;
 import com.lgraph.dto.response.GraphDataResponse.GraphNodeDto;
 import com.lgraph.entity.KnowledgeNode;
 import com.lgraph.entity.PageKnowledgeNode;
+import com.lgraph.entity.ReviewRecord;
 import com.lgraph.mapper.KnowledgeNodeMapper;
 import com.lgraph.mapper.PageKnowledgeNodeMapper;
+import com.lgraph.mapper.ReviewRecordMapper;
 import com.lgraph.service.GraphService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -20,6 +22,7 @@ public class GraphServiceImpl implements GraphService {
 
     private final KnowledgeNodeMapper knMapper;
     private final PageKnowledgeNodeMapper pknMapper;
+    private final ReviewRecordMapper reviewRecordMapper;
 
     private static final String[] MASTERY_COLORS = {"#3a3a5c", "#e74c3c", "#f39c12", "#2ecc71"};
 
@@ -51,11 +54,53 @@ public class GraphServiceImpl implements GraphService {
             }
         }
 
+        // Compute per-knowledge-node mastery from user's review records (when userId is provided)
+        Map<Long, Integer> nodeMastery = new HashMap<>();
+        if (userId != null && !nodeIds.isEmpty()) {
+            // Find pages attached to these knowledge nodes
+            var pknList = pknMapper.selectList(
+                    new LambdaQueryWrapper<PageKnowledgeNode>()
+                            .in(PageKnowledgeNode::getKnowledgeNodeId, nodeIds));
+            var pageIdToNodeIds = new HashMap<Long, List<Long>>();
+            var attachedPageIds = new HashSet<Long>();
+            for (var pkn : pknList) {
+                pageIdToNodeIds.computeIfAbsent(pkn.getPageId(), k -> new ArrayList<>())
+                        .add(pkn.getKnowledgeNodeId());
+                attachedPageIds.add(pkn.getPageId());
+            }
+
+            if (!attachedPageIds.isEmpty()) {
+                // Get review records for this user on those pages
+                var reviews = reviewRecordMapper.selectList(
+                        new LambdaQueryWrapper<ReviewRecord>()
+                                .eq(ReviewRecord::getUserId, userId)
+                                .in(ReviewRecord::getPageId, attachedPageIds));
+
+                // Group reviews by page, take max mastery per page
+                var pageMaxMastery = new HashMap<Long, Integer>();
+                for (var r : reviews) {
+                    pageMaxMastery.merge(r.getPageId(), r.getMasteryLevel(), Math::max);
+                }
+
+                // Propagate page mastery to attached knowledge nodes (take max across pages)
+                for (var entry : pageMaxMastery.entrySet()) {
+                    Long pageId = entry.getKey();
+                    int mastery = entry.getValue();
+                    var nodeIdsForPage = pageIdToNodeIds.get(pageId);
+                    if (nodeIdsForPage != null) {
+                        for (Long nodeId : nodeIdsForPage) {
+                            nodeMastery.merge(nodeId, mastery, Math::max);
+                        }
+                    }
+                }
+            }
+        }
+
         // Build graph nodes
         var graphNodes = new ArrayList<GraphNodeDto>();
         for (var kn : allNodes) {
             int pages = pageCounts.getOrDefault(kn.getId(), 0);
-            int mastery = 0; // Simplified — would need user-specific data
+            int mastery = nodeMastery.getOrDefault(kn.getId(), 0);
             graphNodes.add(GraphNodeDto.builder()
                     .id("kn-" + kn.getId())
                     .label(kn.getName())

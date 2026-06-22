@@ -57,6 +57,14 @@
       <div class="sidebar-tree" v-loading="treeStore.loading">
         <template v-if="treeStore.treeData.length > 0">
           <KnowledgeTree />
+          <div class="sidebar-tree-actions">
+            <el-tooltip content="在当前学科下添加新的知识点节点" placement="right">
+              <el-button size="small" text class="add-node-btn" @click="openAddNodeDialog">
+                <el-icon :size="14"><Plus /></el-icon>
+                添加节点
+              </el-button>
+            </el-tooltip>
+          </div>
         </template>
         <EmptyState v-else message="选择一个学科以查看知识树" />
       </div>
@@ -96,13 +104,52 @@
         </el-tooltip>
       </template>
     </div>
+
+    <!-- Add node dialog -->
+    <el-dialog
+      v-model="addNodeDialogVisible"
+      title="添加知识点节点"
+      width="420px"
+      :close-on-click-modal="false"
+    >
+      <el-form :model="newNodeForm" label-position="top" size="default">
+        <el-form-item label="节点名称" required>
+          <el-input v-model="newNodeForm.name" placeholder="请输入知识点名称" maxlength="100" show-word-limit />
+        </el-form-item>
+        <el-form-item label="节点类型">
+          <el-select v-model="newNodeForm.nodeType" style="width: 100%">
+            <el-option label="章节 (Chapter)" value="CHAPTER" />
+            <el-option label="小节 (Section)" value="SECTION" />
+            <el-option label="主题 (Topic)" value="TOPIC" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="父节点（可选）">
+          <el-tree-select
+            v-model="newNodeForm.parentId"
+            :data="treeStore.treeData"
+            :props="{ label: 'name', children: 'children', value: 'id' }"
+            placeholder="选择父节点（留空则创建为根节点）"
+            clearable
+            check-strictly
+            style="width: 100%"
+          />
+        </el-form-item>
+        <el-form-item label="描述（可选）">
+          <el-input v-model="newNodeForm.description" type="textarea" :rows="2" placeholder="简要描述该知识点" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="addNodeDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="addNodeLoading" @click="createKnowledgeNode">确认添加</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, reactive, watch, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { Fold, Expand, Search, UserFilled, User, Tools, SwitchButton } from '@element-plus/icons-vue'
+import { Fold, Expand, Search, UserFilled, User, Tools, SwitchButton, Plus } from '@element-plus/icons-vue'
 import { useUiStore } from '@/stores/ui.store'
 import { useAuthStore } from '@/stores/auth.store'
 import { useSubjectStore } from '@/stores/subject.store'
@@ -110,6 +157,7 @@ import { useKnowledgeTreeStore } from '@/stores/knowledge-tree.store'
 import KnowledgeTree from '@/components/knowledge-tree/KnowledgeTree.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import ThemeToggle from '@/components/common/ThemeToggle.vue'
+import { ElMessage } from 'element-plus'
 
 const router = useRouter()
 const route = useRoute()
@@ -121,13 +169,46 @@ const treeStore = useKnowledgeTreeStore()
 const selectedSubject = ref<number | null>(null)
 const searchText = ref('')
 
+// Add node dialog state
+const addNodeDialogVisible = ref(false)
+const addNodeLoading = ref(false)
+const newNodeForm = reactive({
+  name: '',
+  nodeType: 'TOPIC' as 'CHAPTER' | 'SECTION' | 'TOPIC',
+  parentId: null as number | null,
+  description: '',
+})
+
 onMounted(async () => {
   await subjectStore.fetchSubjects()
-  if (subjectStore.subjects.length > 0) {
-    selectedSubject.value = subjectStore.subjects[0].id
-    await onSubjectChange(selectedSubject.value)
-  }
+  // Sync sidebar selector to the current route (if already on a subject page)
+  syncFromRoute()
 })
+
+// When the user navigates to a subject (e.g. clicking a card in SubjectListView),
+// the sidebar selector and knowledge tree follow automatically.
+watch(
+  () => route.params.subjectId,
+  () => syncFromRoute(),
+)
+
+function syncFromRoute() {
+  const routeId = route.params.subjectId
+  if (routeId) {
+    const id = Number(routeId)
+    if (selectedSubject.value !== id) {
+      selectedSubject.value = id
+      subjectStore.setCurrentSubject(id)
+      treeStore.fetchTree(id)
+    }
+  } else {
+    // User navigated away from a subject — clear sidebar state
+    selectedSubject.value = null
+    subjectStore.clearCurrentSubject()
+    treeStore.selectNode(null)
+    treeStore.treeData = []
+  }
+}
 
 async function onSubjectChange(id: number | null) {
   if (id) {
@@ -152,6 +233,41 @@ function handleUserCommand(command: string) {
       authStore.logout()
       router.push('/login')
       break
+  }
+}
+
+function openAddNodeDialog() {
+  newNodeForm.name = ''
+  newNodeForm.nodeType = 'TOPIC'
+  newNodeForm.parentId = null
+  newNodeForm.description = ''
+  addNodeDialogVisible.value = true
+}
+
+async function createKnowledgeNode() {
+  if (!newNodeForm.name.trim()) {
+    ElMessage.warning('请输入节点名称')
+    return
+  }
+  if (!selectedSubject.value) {
+    ElMessage.warning('请先选择一个学科')
+    return
+  }
+  addNodeLoading.value = true
+  try {
+    await treeStore.createNode({
+      subjectId: selectedSubject.value,
+      name: newNodeForm.name.trim(),
+      description: newNodeForm.description.trim() || undefined,
+      parentId: newNodeForm.parentId,
+      nodeType: newNodeForm.nodeType,
+    })
+    ElMessage.success('知识点节点已添加')
+    addNodeDialogVisible.value = false
+  } catch {
+    ElMessage.error('添加失败')
+  } finally {
+    addNodeLoading.value = false
   }
 }
 </script>
@@ -223,6 +339,23 @@ function handleUserCommand(command: string) {
   overflow-y: auto;
   margin: 0 calc(-1 * var(--space-3));
   padding: 0 var(--space-3);
+}
+
+.sidebar-tree-actions {
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-border);
+}
+
+.add-node-btn {
+  color: var(--color-text-muted) !important;
+  font-size: var(--font-size-xs);
+  width: 100%;
+  justify-content: center;
+  &:hover {
+    color: var(--color-accent-light) !important;
+    background: var(--color-bg-card-hover) !important;
+  }
 }
 
 .sidebar-footer {

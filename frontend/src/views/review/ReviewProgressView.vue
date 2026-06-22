@@ -1,6 +1,14 @@
 <template>
   <div class="review-progress-view">
     <div class="review-header">
+      <div class="review-header-top">
+        <el-tooltip content="返回学科详情" placement="bottom">
+          <el-button text class="back-btn" @click="$router.push(`/subjects/${$route.params.subjectId}`)">
+            <el-icon :size="18"><ArrowLeft /></el-icon>
+            返回
+          </el-button>
+        </el-tooltip>
+      </div>
       <h1 class="review-title">学习进度</h1>
       <p class="review-desc">追踪你的复习轨迹，掌握学习节奏</p>
     </div>
@@ -132,7 +140,7 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { Document, Checked, TrendCharts, Trophy, Select, RefreshLeft } from '@element-plus/icons-vue'
+import { Document, Checked, TrendCharts, Trophy, Select, RefreshLeft, ArrowLeft } from '@element-plus/icons-vue'
 import { useReviewStore } from '@/stores/review.store'
 import { useNoteStore } from '@/stores/note.store'
 import { ElMessage } from 'element-plus'
@@ -185,6 +193,16 @@ function percent(count: number, total: number): string {
 
 .review-header {
   margin-bottom: var(--space-6);
+}
+
+.review-header-top {
+  margin-bottom: var(--space-2);
+}
+
+.back-btn {
+  color: var(--color-text-muted) !important;
+  padding: 4px 10px;
+  &:hover { color: var(--color-accent-light) !important; background: var(--color-bg-card-hover) !important; }
 }
 
 .review-title {

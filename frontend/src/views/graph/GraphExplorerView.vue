@@ -2,6 +2,14 @@
   <div class="graph-explorer-view">
     <div class="graph-header">
       <div>
+        <div class="graph-header-top">
+          <el-tooltip content="返回学科详情" placement="bottom">
+            <el-button text class="back-btn" @click="$router.push(`/subjects/${$route.params.subjectId}`)">
+              <el-icon :size="18"><ArrowLeft /></el-icon>
+              返回
+            </el-button>
+          </el-tooltip>
+        </div>
         <h1 class="graph-title">知识图谱</h1>
         <p class="graph-desc">可视化浏览知识点之间的关联关系。节点颜色表示掌握程度，大小表示笔记数量。</p>
       </div>
@@ -88,7 +96,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { InfoFilled, View } from '@element-plus/icons-vue'
+import { InfoFilled, View, ArrowLeft } from '@element-plus/icons-vue'
 import { useGraphStore } from '@/stores/graph.store'
 import { useKnowledgeTreeStore } from '@/stores/knowledge-tree.store'
 import { masteryTagType, masteryText } from '@/utils/mastery'
@@ -136,6 +144,16 @@ function viewNode(nodeId: number) {
   justify-content: space-between;
   margin-bottom: var(--space-4);
   flex-shrink: 0;
+}
+
+.graph-header-top {
+  margin-bottom: var(--space-2);
+}
+
+.back-btn {
+  color: var(--color-text-muted) !important;
+  padding: 4px 10px;
+  &:hover { color: var(--color-accent-light) !important; background: var(--color-bg-card-hover) !important; }
 }
 
 .graph-title {

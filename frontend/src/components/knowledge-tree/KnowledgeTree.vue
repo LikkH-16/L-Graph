@@ -23,9 +23,12 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useKnowledgeTreeStore } from '@/stores/knowledge-tree.store'
 import type { KnowledgeNodeTreeItem } from '@/types'
 
+const route = useRoute()
+const router = useRouter()
 const treeStore = useKnowledgeTreeStore()
 
 const treeProps = {
@@ -54,6 +57,13 @@ function getNodeClass(node: KnowledgeNodeTreeItem) {
 
 function onNodeClick(data: KnowledgeNodeTreeItem) {
   treeStore.selectNode(data.id)
+  treeStore.expandNode(data.id)
+  // Navigate to subject detail if currently on graph/progress/slides
+  // so the content area follows the node selection.
+  const subjectId = route.params.subjectId
+  if (subjectId && route.name !== 'SubjectDetail') {
+    router.push(`/subjects/${subjectId}`)
+  }
 }
 </script>
 
