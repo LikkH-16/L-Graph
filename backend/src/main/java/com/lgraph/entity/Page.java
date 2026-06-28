@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @TableName("lgraph_page")
@@ -19,4 +20,8 @@ public class Page {
     private LocalDateTime lastReviewedAt;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    /** 关联的知识节点 ID 列表（非数据库字段，由 Service 层填充） */
+    @TableField(exist = false)
+    private List<Long> attachedNodeIds;
 }

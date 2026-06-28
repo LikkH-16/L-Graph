@@ -4,14 +4,19 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lgraph.entity.Note;
 import com.lgraph.entity.NoteStatus;
 import com.lgraph.entity.Page;
+import com.lgraph.entity.PageKnowledgeNode;
 import com.lgraph.exception.BusinessException;
 import com.lgraph.mapper.NoteMapper;
+import com.lgraph.mapper.PageKnowledgeNodeMapper;
 import com.lgraph.mapper.PageMapper;
 import com.lgraph.service.NoteService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -19,6 +24,7 @@ public class NoteServiceImpl implements NoteService {
 
     private final NoteMapper noteMapper;
     private final PageMapper pageMapper;
+    private final PageKnowledgeNodeMapper pknMapper;
 
     @Override
     public List<Note> getNotesBySubject(Long userId, Long subjectId) {
@@ -57,9 +63,26 @@ public class NoteServiceImpl implements NoteService {
 
     @Override
     public List<Page> getPages(Long noteId) {
-        return pageMapper.selectList(
+        var pages = pageMapper.selectList(
                 new LambdaQueryWrapper<Page>()
                         .eq(Page::getNoteId, noteId)
                         .orderByAsc(Page::getOrderIndex));
+
+        // Populate attachedNodeIds for filtering by knowledge node
+        if (!pages.isEmpty()) {
+            var pageIds = pages.stream().map(Page::getId).toList();
+            var pknList = pknMapper.selectList(
+                    new LambdaQueryWrapper<PageKnowledgeNode>()
+                            .in(PageKnowledgeNode::getPageId, pageIds));
+            Map<Long, List<Long>> nodeIdsByPage = pknList.stream()
+                    .collect(Collectors.groupingBy(
+                            PageKnowledgeNode::getPageId,
+                            Collectors.mapping(PageKnowledgeNode::getKnowledgeNodeId, Collectors.toList())));
+            for (var page : pages) {
+                page.setAttachedNodeIds(nodeIdsByPage.getOrDefault(page.getId(), List.of()));
+            }
+        }
+
+        return pages;
     }
 }

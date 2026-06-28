@@ -24,7 +24,7 @@ public class GraphServiceImpl implements GraphService {
     private final PageKnowledgeNodeMapper pknMapper;
     private final ReviewRecordMapper reviewRecordMapper;
 
-    private static final String[] MASTERY_COLORS = {"#3a3a5c", "#e74c3c", "#f39c12", "#2ecc71"};
+    private static final String[] MASTERY_COLORS = {"#6366f1", "#f43f5e", "#f59e0b", "#10b981"};
 
     @Override
     public GraphDataResponse getSubjectGraph(Long subjectId) {

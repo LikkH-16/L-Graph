@@ -1,6 +1,9 @@
 import { ref, onUnmounted } from 'vue'
-import { Graph } from '@antv/g6'
+import { Graph, register, DagreLayout } from '@antv/g6'
 import type { GraphNode, GraphEdge } from '@/types'
+
+// Register dagre layout for G6 v5
+register('layout', 'dagre', DagreLayout)
 
 export function useGraph() {
   const graphInstance = ref<Graph | null>(null)
@@ -28,28 +31,36 @@ export function useGraph() {
       autoFit: 'view',
       animation: false,
       background: 'transparent',
+      theme: 'dark',
       node: {
         style: (d: Record<string, unknown>) => {
-          const node = d as unknown as GraphNode
+          const node = d as unknown as GraphNode & { _type?: string }
+          const nodeType = (node as any)._type || node.type || 'knowledge'
+          // Vibrant mastery color palette
+          const masteryColors = ['#6366f1', '#f43f5e', '#f59e0b', '#10b981']
+          const baseColor = node.color || masteryColors[node.masteryLevel || 0] || '#6366f1'
           return {
-            fill: node.color || '#3a3a5c',
-            stroke: node.type === 'page' ? '#7c5ce7' : 'transparent',
-            strokeWidth: node.type === 'page' ? 1.5 : 0,
+            fill: baseColor,
+            stroke: nodeType === 'page' ? '#a78bfa' : 'rgba(255,255,255,0.15)',
+            strokeWidth: nodeType === 'page' ? 2 : 0.5,
             size: node.size || 30,
             labelText: node.label,
-            labelFill: '#e8e8f0',
-            labelFontSize: 10,
+            labelFill: '#f1f5f9',
+            labelFontSize: 12,
+            labelFontWeight: 500,
             labelPlacement: 'bottom',
-            labelOffsetY: 6,
-            opacity: node.masteryLevel === 0 ? 0.5 : 1,
+            labelOffsetY: 8,
+            shadowColor: node.masteryLevel === 3 ? 'rgba(16, 185, 129, 0.3)' : 'transparent',
+            shadowBlur: 8,
+            opacity: node.masteryLevel === 0 ? 0.65 : 0.95,
           }
         },
         state: {
           active: {
-            stroke: '#7c5ce7',
+            stroke: '#a78bfa',
             strokeWidth: 3,
-            shadowColor: 'rgba(124, 92, 231, 0.5)',
-            shadowBlur: 12,
+            shadowColor: 'rgba(167, 139, 250, 0.5)',
+            shadowBlur: 16,
           },
         },
       },
@@ -57,26 +68,25 @@ export function useGraph() {
         style: (d: Record<string, unknown>) => {
           const edge = d as unknown as GraphEdge
           const colorMap: Record<string, string> = {
-            PARENT_OF: '#3a3a5c',
-            ATTACHED_TO: '#7c5ce7',
-            REFERENCES: '#3498db',
+            PARENT_OF: 'rgba(148, 163, 184, 0.45)',
+            ATTACHED_TO: '#a78bfa',
+            REFERENCES: 'rgba(56, 189, 248, 0.35)',
           }
           return {
-            stroke: colorMap[edge.type] || '#3a3a5c',
+            stroke: colorMap[edge.type] || 'rgba(148, 163, 184, 0.4)',
             lineWidth: edge.type === 'ATTACHED_TO' ? 2 : 1,
-            lineDash: edge.type === 'REFERENCES' ? [4, 4] : undefined,
+            lineDash: edge.type === 'REFERENCES' ? [6, 4] : undefined,
             endArrow: edge.type !== 'REFERENCES',
-            opacity: 0.4,
+            opacity: edge.type === 'ATTACHED_TO' ? 0.7 : 0.4,
           }
         },
       },
       layout: {
-        // 【修改】从 'force' 改为 'dagre' 布局，计算快且不会抖动卡死
         type: 'dagre',
-        rankdir: 'LR', // 从左到右
+        rankdir: 'LR',
         align: 'UL',
-        nodesepFunc: () => 30,
-        ranksepFunc: () => 50
+        nodesep: 30,
+        ranksep: 50,
       },
       behaviors: [
         'drag-canvas',
@@ -84,7 +94,10 @@ export function useGraph() {
         { type: 'hover-activate', degree: 1, direction: 'both' },
       ],
       data: {
-        nodes: data.nodes as unknown as Record<string, unknown>[],
+        nodes: data.nodes.map(n => {
+          const { type, ...rest } = n as Record<string, unknown>
+          return { ...rest, _type: type }
+        }) as unknown as Record<string, unknown>[],
         edges: data.edges.map(e => ({ source: e.source, target: e.target, data: e })) as unknown as Record<string, unknown>[],
       },
     })

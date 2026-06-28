@@ -24,10 +24,20 @@
     </div>
 
     <div v-else class="note-content">
+      <!-- 知识点筛选提示 -->
+      <div v-if="selectedNodeName" class="filter-banner">
+        <el-icon :size="14"><Filter /></el-icon>
+        知识树已选中 "<strong>{{ selectedNodeName }}</strong>" — 仅显示关联页面
+        <el-button size="small" text @click="clearNodeFilter">
+          <el-icon :size="12"><Close /></el-icon>
+          显示全部
+        </el-button>
+      </div>
+
       <div class="page-tabs-bar">
         <div class="page-tabs">
           <el-tooltip
-            v-for="page in noteStore.pages"
+            v-for="page in displayPages"
             :key="page.id"
             :content="`${masteryLabel(page.masteryLevel).text} — 已复习 ${page.reviewRound} 轮`"
             placement="top"
@@ -45,15 +55,19 @@
               {{ page.title }}
             </button>
           </el-tooltip>
+          <span v-if="displayPages.length === 0 && noteStore.pages.length > 0" class="no-match">
+            <el-icon :size="14"><Warning /></el-icon>
+            当前知识点下没有页面，请新建或<a @click="clearNodeFilter" class="link">显示全部</a>
+          </span>
         </div>
         <div class="page-tabs-bar-actions">
-          <el-tooltip content="创建新的笔记页 (Ctrl+N)" placement="top">
+          <el-tooltip content="创建新的笔记页" placement="top">
             <el-button size="small" type="primary" @click="addPage">
               <el-icon><Plus /></el-icon>
               新建页
             </el-button>
           </el-tooltip>
-          <el-tooltip content="保存当前页面 (Ctrl+S)" placement="top">
+          <el-tooltip content="保存当前页面" placement="top">
             <el-button size="small" :loading="pageStore.saving" :disabled="!pageStore.isDirty" @click="saveCurrentPage">
               <el-icon><Check /></el-icon>
               保存
@@ -69,6 +83,13 @@
           @update:model-value="onContentChange"
         />
       </div>
+
+      <EmptyState v-else-if="displayPages.length === 0 && noteStore.pages.length > 0" message="当前知识点下没有页面" icon="📄">
+        <el-button size="small" type="primary" @click="addPage">
+          <el-icon><Plus /></el-icon>
+          新建页
+        </el-button>
+      </EmptyState>
     </div>
 
     <!-- Page context menu -->
@@ -92,10 +113,12 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { Plus, EditPen, Edit, Delete, Check } from '@element-plus/icons-vue'
+import { Plus, EditPen, Edit, Delete, Check, Filter, Close, Warning } from '@element-plus/icons-vue'
 import { useSubjectStore } from '@/stores/subject.store'
 import { useNoteStore } from '@/stores/note.store'
 import { usePageStore } from '@/stores/page.store'
+import { useKnowledgeTreeStore } from '@/stores/knowledge-tree.store'
+import { pageApi } from '@/api/page.api'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { masteryLabel } from '@/utils/mastery'
 import MarkdownEditor from '@/components/editor/MarkdownEditor.vue'
@@ -107,6 +130,7 @@ const route = useRoute()
 const subjectStore = useSubjectStore()
 const noteStore = useNoteStore()
 const pageStore = usePageStore()
+const treeStore = useKnowledgeTreeStore()
 
 const currentPageId = ref<number | null>(null)
 const creating = ref(false)
@@ -118,21 +142,57 @@ const contextMenu = ref({
   page: null as Page | null,
 })
 
-const currentPage = computed(() => {
-  if (!currentPageId.value) return noteStore.pages[0] || null
-  return noteStore.pages.find(p => p.id === currentPageId.value) || null
+/** 侧栏选中知识点名 */
+const selectedNodeName = computed(() => {
+  if (!treeStore.selectedNodeId) return null
+  return treeStore.selectedNode?.name || null
 })
+
+/** 根据侧栏选中知识点筛选后的页面列表（无选中时显示全部） */
+const displayPages = computed(() => {
+  const nodeId = treeStore.selectedNodeId
+  if (!nodeId) return noteStore.pages
+  return noteStore.pages.filter(p => {
+    const ids = p.attachedNodeIds
+    return ids && ids.length > 0 && ids.includes(nodeId)
+  })
+})
+
+const currentPage = computed(() => {
+  const list = displayPages.value
+  if (!currentPageId.value) return list[0] || null
+  return list.find(p => p.id === currentPageId.value) || null
+})
+
+function clearNodeFilter() {
+  treeStore.selectNode(null)
+}
 
 onMounted(async () => {
   const subjectId = Number(route.params.subjectId)
   await subjectStore.fetchSubjects()
   subjectStore.setCurrentSubject(subjectId)
   await noteStore.fetchNote(subjectId)
-  if (noteStore.pages.length > 0) {
-    currentPageId.value = noteStore.pages[0].id
-    pageStore.fetchPage(noteStore.pages[0].id)
-  }
+  syncToSelection()
 })
+
+// When sidebar tree node or page list changes, auto-select first matching page
+watch(
+  [() => treeStore.selectedNodeId, () => noteStore.pages],
+  () => syncToSelection(),
+)
+
+function syncToSelection() {
+  if (displayPages.value.length > 0) {
+    const firstId = displayPages.value[0].id
+    if (currentPageId.value !== firstId) {
+      currentPageId.value = firstId
+    }
+  } else if (treeStore.selectedNodeId && noteStore.pages.length > 0) {
+    // Node selected but no matching pages → clear editor
+    currentPageId.value = null
+  }
+}
 
 watch(currentPageId, async (id) => {
   if (id) await pageStore.fetchPage(id)
@@ -155,14 +215,22 @@ async function addPage() {
   const title = `${dateStr} 笔记`
   const page = await noteStore.createPage(title)
   if (page) {
+    // 若侧栏有选中知识点，立即设置关联以让筛选可见
+    const nodeId = treeStore.selectedNodeId
+    if (nodeId) {
+      if (!page.attachedNodeIds) page.attachedNodeIds = [nodeId]
+      // 同步到服务端
+      pageApi.attachToNode(page.id, nodeId).catch(() => {})
+    }
     currentPageId.value = page.id
+    await pageStore.fetchPage(page.id)
     ElMessage.success('新页面已创建')
   }
 }
 
 async function saveCurrentPage() {
-  if (!currentPage.value) return
-  await pageStore.savePage()
+  if (!currentPageId.value) return
+  await pageStore.savePage(currentPageId.value)
   if (!pageStore.isDirty) {
     ElMessage.success('已保存')
   }
@@ -183,10 +251,8 @@ async function createNote() {
 }
 
 function onContentChange(value: string) {
-  if (currentPage.value) {
-    pageStore.content = value
-    pageStore.markDirty()
-  }
+  pageStore.content = value
+  pageStore.markDirty()
 }
 
 // Context menu handlers
@@ -263,6 +329,32 @@ async function deleteCurrentPage() {
 .hero-icon { font-size: 2.5rem; }
 .hero-title { font-size: var(--font-size-2xl); font-weight: 700; color: var(--color-text-primary); margin-bottom: 2px; }
 .hero-desc { font-size: var(--font-size-sm); color: var(--color-text-secondary); }
+
+.filter-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  margin-bottom: var(--space-3);
+  background: rgba(124, 92, 231, 0.08);
+  border: 1px solid rgba(124, 92, 231, 0.2);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+
+  strong { color: var(--color-accent-light); }
+}
+
+.no-match {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+
+  .link { color: var(--color-accent-light); cursor: pointer; text-decoration: underline; }
+}
 
 .page-tabs-bar {
   display: flex;

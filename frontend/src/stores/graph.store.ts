@@ -29,7 +29,7 @@ export const useGraphStore = defineStore('graph', () => {
   async function fetchGraphData(subjectId: number) {
     loading.value = true
     try {
-      const data = await graphApi.getSubjectGraph(subjectId)
+      const data = await graphApi.getPersonalizedGraph(subjectId)
       nodes.value = data.nodes
       edges.value = data.edges
     } finally {

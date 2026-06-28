@@ -24,14 +24,19 @@ export const usePageStore = defineStore('page', () => {
     }
   }
 
-  async function savePage() {
-    if (!currentPage.value || !isDirty.value) return
+  async function savePage(pageId: number) {
+    if (!pageId) return
     saving.value = true
     try {
-      await pageApi.updatePage(currentPage.value.id, {
+      await pageApi.updatePage(pageId, {
         content: content.value,
       })
       isDirty.value = false
+      // Update local page list content so re-entry shows latest
+      const targetPage = currentPage.value
+      if (targetPage?.id === pageId) {
+        targetPage.content = content.value
+      }
     } finally {
       saving.value = false
     }

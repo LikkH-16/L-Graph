@@ -218,7 +218,7 @@ function viewNode(nodeId: number) {
 
 .graph-canvas-wrap {
   flex: 1;
-  min-height: 0;
+  min-height: 500px;
   position: relative;
 }
 
