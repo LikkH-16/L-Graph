@@ -1,0 +1,259 @@
+' ============================================================
+' L-Graph AI 助教 UML 图集合
+' ============================================================
+
+' ============================================================
+' 一、用例图
+' ============================================================
+@startuml AI用例图
+title AI 学习助教用例图
+
+left to right direction
+
+actor "学生用户" as User
+
+rectangle "AI 助教模块" {
+  usecase "打开AI聊天" as UC_Open
+  usecase "发送问题" as UC_Send
+  usecase "查看AI回复" as UC_Reply
+  usecase "多会话管理" as UC_Sessions
+  usecase "新建对话" as UC_NewSession
+  usecase "切换历史对话" as UC_Switch
+  usecase "删除对话" as UC_Delete
+  usecase "拖拽移动悬浮按钮" as UC_Drag
+  usecase "关闭聊天面板" as UC_Close
+}
+
+actor "DeepSeek API" as API <<外部系统>>
+
+User --> UC_Open
+User --> UC_Send
+User --> UC_Reply
+User --> UC_Sessions
+User --> UC_Drag
+User --> UC_Close
+
+UC_Sessions ..> UC_NewSession : <<include>>
+UC_Sessions ..> UC_Switch : <<include>>
+UC_Sessions ..> UC_Delete : <<include>>
+
+UC_Send ..> UC_Open : <<include>>
+UC_Send ..> UC_Reply : <<include>>
+UC_Send --> API : 调用 DeepSeek\nchat/completions
+
+@enduml
+
+
+' ============================================================
+' 二、顺序图
+' ============================================================
+@startuml AI顺序图-发送问题
+title AI 助教对话顺序图
+
+actor "学生" as User
+participant "AiChatFloating\n(Vue组件)" as Floating
+participant "ai.api.ts\n(Axios)" as Api
+participant "AiController\n(Spring)" as Controller
+participant "AiServiceImpl\n(Service)" as Service
+participant "DeepSeek API\n(外部)" as DeepSeek
+database "localStorage" as LS
+
+== 打开聊天面板 ==
+User -> Floating: 点击悬浮按钮
+Floating -> LS: loadSessions() 加载历史会话
+LS --> Floating: Session[]
+Floating --> User: 显示聊天抽屉
+
+== 发送问题 ==
+User -> Floating: 输入问题，按Enter
+Floating -> Floating: push user msg + 去重title
+Floating -> LS: saveSessions() 持久化
+
+Floating -> Api: POST /ai/chat\n{message, history}
+Api -> Controller: HTTP POST /api/v1/ai/chat
+Controller -> Service: aiService.chat(request)
+
+Service -> Service: 构建 messages[]:\nsystem prompt + history + user msg
+Service -> DeepSeek: POST /v1/chat/completions\nAuthorization: Bearer <API_KEY>\n{model, messages, max_tokens}
+
+alt API调用成功
+  DeepSeek --> Service: {choices[0].message.content}
+  Service --> Controller: AiChatResponse(reply)
+  Controller --> Api: ApiResponse(200, AiChatResponse)
+  Api --> Floating: { reply: "..." }
+  Floating -> Floating: push assistant msg
+  Floating -> LS: saveSessions() 持久化
+  Floating --> User: 显示AI回复
+
+else API调用失败
+  DeepSeek --> Service: Error
+  Service --> Controller: AiChatResponse("AI调用出错")
+  Floating --> User: 显示错误提示
+end
+
+== 切换/删除会话 ==
+User -> Floating: 点击历史会话 / 删除
+Floating -> LS: saveSessions() 更新
+Floating -> Floating: switchSession / deleteSession
+Floating --> User: 刷新对话列表
+
+@enduml
+
+
+' ============================================================
+' 三、类图
+' ============================================================
+@startuml AI类图
+title AI 助教模块类图
+
+' -- 前端组件 --
+class "AiChatFloating\nVue SFC" as Floating {
+  - visible: boolean
+  - input: string
+  - sending: boolean
+  - sessions: Session[]
+  - currentSessionId: string
+  - pos: {x, y} (拖拽位置)
+  - dragging: boolean
+  + openChat()
+  + sendMessage()
+  + newSession()
+  + switchSession(id)
+  + deleteSession(id)
+  + startDrag / onDrag / stopDrag()
+  __ 悬浮按钮 + 聊天抽屉 + 会话管理
+  __ localStorage 持久化
+}
+
+class "Session\n数据结构" as Session {
+  + id: string
+  + title: string
+  + createdAt: number (timestamp)
+  + messages: Msg[]
+}
+
+class "Msg\n消息" as Msg {
+  + role: 'user' | 'assistant'
+  + content: string
+  + time: string
+}
+
+Floating *-- "0..*" Session
+Session *-- "0..*" Msg
+
+' -- API 层 --
+class "ai.api.ts\nAPI封装" as AiApi {
+  + chat(data): Promise<AiChatResult>
+  __ POST /ai/chat
+  __ 携带 JWT Bearer Token
+}
+
+class "AiChatResult\n响应" as AiResult {
+  + reply: string
+}
+
+Floating --> AiApi : 调用
+AiApi ..> AiResult : 返回
+
+' -- 后端 Controller --
+class "AiController\n控制器" as AiCtrl {
+  - AiService aiService
+  + chat(AiChatRequest): ApiResponse<AiChatResponse>
+}
+
+' -- 后端 DTO --
+class "AiChatRequest\n请求" as AiReq {
+  - String message
+  - List<AiMessage> history
+}
+
+class "AiMessage\n消息" as AiMsg {
+  - String role
+  - String content
+}
+
+class "AiChatResponse\n响应" as AiResp {
+  - String reply
+}
+
+AiReq *-- "0..*" AiMsg
+
+' -- 后端 Service --
+interface "AiService\n接口" as AiSvcInterface {
+  + chat(AiChatRequest): AiChatResponse
+}
+
+class "AiServiceImpl\n实现" as AiSvc {
+  - RestTemplate restTemplate
+  - String apiKey (来自application.yml)
+  - String model
+  + chat(AiChatRequest): AiChatResponse
+  __ 构建OpenAI兼容请求
+  __ 调用 DeepSeek /v1/chat/completions
+}
+
+' -- 关系 --
+AiCtrl --> AiSvcInterface : 依赖
+AiSvcInterface <|.. AiSvc : 实现
+AiCtrl ..> AiReq : 接收
+AiCtrl ..> AiResp : 返回
+AiSvc ..> AiReq : 解析
+AiSvc ..> AiResp : 构建
+
+@enduml
+
+
+' ============================================================
+' 四、状态图
+' ============================================================
+@startuml AI状态图
+title AI 助教组件状态图
+
+[*] --> 悬浮按钮显示 : 页面加载，初始化位置\n(右下角默认)
+
+state "悬浮按钮显示" as Fab {
+  [*] --> 待机
+  待机 : 紫色圆形按钮\n显示在拖拽位置
+  待机 --> 拖拽中 : 用户按住拖拽
+  拖拽中 : pos实时跟随鼠标\n限制在视口内
+  拖拽中 --> 待机 : 释放鼠标 (dragMoved=true)
+}
+
+悬浮按钮显示 --> 聊天面板打开 : 点击按钮 (dragMoved=false)
+
+state "聊天面板打开" as Drawer {
+  [*] --> 显示对话列表
+  显示对话列表 : 如果有历史会话\n显示会话列表
+
+  state "当前会话" as ActiveSession {
+    [*] --> 等待输入
+    等待输入 --> 发送中 : 用户输入+Enter
+    发送中 : sending=true\n显示typing动画
+    发送中 --> 显示回复 : API返回成功
+    发送中 --> 显示错误 : API返回失败
+    显示回复 --> 等待输入 : 继续对话
+    显示错误 --> 等待输入 : 继续对话
+  }
+
+  显示对话列表 --> 新建对话 : 点击 + 按钮
+  新建对话 --> 等待输入
+
+  显示对话列表 --> 切换会话 : 点击历史会话
+  切换会话 --> 显示对话列表
+
+  显示对话列表 --> 删除会话 : 点击 × 按钮
+  删除会话 --> 显示对话列表
+}
+
+聊天面板打开 --> 悬浮按钮显示 : 点击关闭按钮
+
+note right of 发送中
+  每次发送后:
+  1. push user msg
+  2. saveSessions() → localStorage
+  3. 调用后端 /ai/chat
+  4. push assistant msg
+  5. saveSessions() → localStorage
+end note
+
+@enduml

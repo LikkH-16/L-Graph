@@ -1,3 +1,4 @@
+com\lgraph\dto\request\AiChatRequest$AiMessage.class
 com\lgraph\dto\response\SubjectTreeResponse$SubjectTreeResponseBuilder.class
 com\lgraph\security\SecurityUtils.class
 com\lgraph\dto\response\GraphDataResponse$GraphNodeDto$GraphNodeDtoBuilder.class
@@ -10,9 +11,11 @@ com\lgraph\controller\KnowledgeNodeController.class
 com\lgraph\service\impl\NoteServiceImpl.class
 com\lgraph\dto\request\NoteCreateRequest.class
 com\lgraph\dto\response\KnowledgeNodeDto.class
+com\lgraph\service\impl\AiServiceImpl.class
 com\lgraph\dto\response\GraphDataResponse$GraphNodeDto.class
 com\lgraph\entity\KnowledgeNode.class
 com\lgraph\LGraphApplication.class
+com\lgraph\service\AiService.class
 com\lgraph\entity\Page.class
 com\lgraph\security\UserDetailsServiceImpl.class
 com\lgraph\dto\request\PageCreateRequest.class
@@ -24,10 +27,12 @@ com\lgraph\dto\response\LoginResponse.class
 com\lgraph\entity\NodeType.class
 com\lgraph\service\impl\SubjectServiceImpl.class
 com\lgraph\dto\request\PageUpdateRequest.class
+com\lgraph\controller\AiController.class
 com\lgraph\service\GraphService.class
 com\lgraph\entity\Note.class
 com\lgraph\config\SecurityConfig.class
 com\lgraph\controller\SubjectController.class
+com\lgraph\dto\request\AiChatRequest.class
 com\lgraph\util\TreeBuilder.class
 com\lgraph\dto\response\UserDto.class
 com\lgraph\mapper\MistakeNoteMapper.class
@@ -72,4 +77,5 @@ com\lgraph\mapper\PageMapper.class
 com\lgraph\mapper\PageKnowledgeNodeMapper.class
 com\lgraph\mapper\NoteMapper.class
 com\lgraph\entity\Subject.class
+com\lgraph\dto\response\AiChatResponse.class
 com\lgraph\entity\User.class

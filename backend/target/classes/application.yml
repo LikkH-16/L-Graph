@@ -58,3 +58,7 @@ app:
   jwt:
     secret: lgraph-jwt-secret-key-must-be-at-least-256-bits-long-for-hs256
     expiration-ms: 86400000
+  ai:
+    deepseek:
+      model: deepseek-chat
+      api-key: sk-a9a10398887b42f6a4d2ea4765744342

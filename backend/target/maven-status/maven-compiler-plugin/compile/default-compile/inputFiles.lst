@@ -1,4 +1,5 @@
 F:\Learning-Graph\backend\src\main\java\com\lgraph\config\WebMvcConfig.java
+F:\Learning-Graph\backend\src\main\java\com\lgraph\controller\AiController.java
 F:\Learning-Graph\backend\src\main\java\com\lgraph\mapper\PageMapper.java
 F:\Learning-Graph\backend\src\main\java\com\lgraph\service\impl\AdminServiceImpl.java
 F:\Learning-Graph\backend\src\main\java\com\lgraph\security\JwtTokenProvider.java
@@ -31,6 +32,7 @@ F:\Learning-Graph\backend\src\main\java\com\lgraph\controller\GraphController.ja
 F:\Learning-Graph\backend\src\main\java\com\lgraph\dto\request\NoteCreateRequest.java
 F:\Learning-Graph\backend\src\main\java\com\lgraph\exception\BusinessException.java
 F:\Learning-Graph\backend\src\main\java\com\lgraph\service\AuthService.java
+F:\Learning-Graph\backend\src\main\java\com\lgraph\dto\request\AiChatRequest.java
 F:\Learning-Graph\backend\src\main\java\com\lgraph\security\UserDetailsServiceImpl.java
 F:\Learning-Graph\backend\src\main\java\com\lgraph\entity\UserRole.java
 F:\Learning-Graph\backend\src\main\java\com\lgraph\exception\GlobalExceptionHandler.java
@@ -39,11 +41,13 @@ F:\Learning-Graph\backend\src\main\java\com\lgraph\config\Neo4jConfig.java
 F:\Learning-Graph\backend\src\main\java\com\lgraph\dto\request\PageCreateRequest.java
 F:\Learning-Graph\backend\src\main\java\com\lgraph\dto\request\RegisterRequest.java
 F:\Learning-Graph\backend\src\main\java\com\lgraph\controller\ReviewController.java
+F:\Learning-Graph\backend\src\main\java\com\lgraph\dto\response\AiChatResponse.java
 F:\Learning-Graph\backend\src\main\java\com\lgraph\dto\response\TreeNodeDto.java
 F:\Learning-Graph\backend\src\main\java\com\lgraph\controller\AdminController.java
 F:\Learning-Graph\backend\src\main\java\com\lgraph\dto\response\LoginResponse.java
 F:\Learning-Graph\backend\src\main\java\com\lgraph\config\CorsConfig.java
 F:\Learning-Graph\backend\src\main\java\com\lgraph\dto\request\ReviewRequest.java
+F:\Learning-Graph\backend\src\main\java\com\lgraph\service\impl\AiServiceImpl.java
 F:\Learning-Graph\backend\src\main\java\com\lgraph\mapper\KnowledgeNodeMapper.java
 F:\Learning-Graph\backend\src\main\java\com\lgraph\mapper\ReviewRecordMapper.java
 F:\Learning-Graph\backend\src\main\java\com\lgraph\mapper\NoteMapper.java
@@ -62,6 +66,7 @@ F:\Learning-Graph\backend\src\main\java\com\lgraph\service\ReviewService.java
 F:\Learning-Graph\backend\src\main\java\com\lgraph\dto\response\UserDto.java
 F:\Learning-Graph\backend\src\main\java\com\lgraph\util\TreeBuilder.java
 F:\Learning-Graph\backend\src\main\java\com\lgraph\entity\KnowledgeNode.java
+F:\Learning-Graph\backend\src\main\java\com\lgraph\service\AiService.java
 F:\Learning-Graph\backend\src\main\java\com\lgraph\service\KnowledgeNodeService.java
 F:\Learning-Graph\backend\src\main\java\com\lgraph\service\NoteService.java
 F:\Learning-Graph\backend\src\main\java\com\lgraph\entity\MistakeNote.java

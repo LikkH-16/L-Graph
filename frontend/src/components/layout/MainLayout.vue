@@ -35,6 +35,8 @@
         <RightPanel />
       </aside>
     </transition>
+    <!-- AI 助教悬浮按钮 -->
+    <AiChatFloating />
   </div>
 </template>
 
@@ -47,6 +49,7 @@ import { usePageStore } from '@/stores/page.store'
 import AppSidebar from './AppSidebar.vue'
 import AppNavbar from './AppNavbar.vue'
 import RightPanel from './RightPanel.vue'
+import AiChatFloating from '@/components/ai/AiChatFloating.vue'
 
 const uiStore = useUiStore()
 const noteStore = useNoteStore()
